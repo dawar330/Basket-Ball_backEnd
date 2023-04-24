@@ -1,0 +1,4 @@
+error: Apr-13-2023 00:53:42: uncaughtException: document must have an _id before saving
+MongooseError: document must have an _id before saving
+    at /home/dawar/Documents/Basket-Ball_backEnd/node_modules/mongoose/lib/model.js:301:18
+    at processTicksAndRejections (node:internal/process/task_queues:78:11)
