@@ -27,6 +27,10 @@ export const userSchema = {
         email: String!
         password: String!
       }
+      input loginInput {
+        email: String!
+        password: String!
+      }
       type auth {
         api_token: String!
         email: String!
@@ -41,6 +45,7 @@ export const userSchema = {
       type Mutation {
         updateUser(UserInput: UserInput!): User
         register(registerUserInput: registerUserInput!): auth
+        login(loginInput: loginInput!): auth
       }
     `,
   ],
@@ -64,6 +69,24 @@ export const userSchema = {
       },
     },
     Mutation: {
+      login: async (_, { loginInput }) => {
+        try {
+          const User = await user.findOne({
+            email: loginInput.email,
+            password: loginInput.password,
+          });
+          var accessToken = getJwt(User.email, "couch");
+
+          return {
+            api_token: accessToken,
+            email: User.email,
+            first_name: User.fname,
+            last_name: User.lname,
+          };
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
       register: async (_, { registerUserInput }) => {
         try {
           const newUser = new user({

@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 export const getUserByToken = async (token) => {
   try {
     const tokenData = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    console.log(token, tokenData);
 
     let tokenUser = await user.findOne({ email: tokenData.email });
     return tokenUser;

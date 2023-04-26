@@ -10,6 +10,8 @@ import { connect } from "mongoose";
 import { MONGODB_URL } from "./config.js";
 import { logger } from "./logger/index.js";
 import { config } from "dotenv";
+import user from "./modal/user.js";
+import { getUserByToken } from "./schema/jwt.js";
 config();
 const liveQueryStore = new InMemoryLiveQueryStore();
 global.liveQueryStore = liveQueryStore;
@@ -32,24 +34,25 @@ const yoga = createYoga({
 
   schema,
   plugins: [useLiveQuery({ liveQueryStore })],
-  // context: async ({ request }) => {
-  //   let userEmail = await verifyJwtAndGetEmail(request.headers.get("bearer"));
-  //   let userID = false;
-  //   let Email = "";
-  //   if (userEmail) {
-  //     const user = await User.findOne(
-  //       { email: userEmail },
-  //       { _id: 1, email: 1 }
-  //     );
-  //     userID = user._id;
-  //     Email = user.email;
-  //   }
-  //   return {
-  //     userID,
-  //     Email: Email,
-  //     pubsub: global.pubsub,
-  //   };
-  // },
+  context: async ({ request }) => {
+    let tokenData = await getUserByToken(request.headers.get("bearer"));
+    let userID = false;
+    let Email = "";
+    console.log(tokenData);
+    if (tokenData.email) {
+      const currentUser = await user.findOne(
+        { email: tokenData.email },
+        { _id: 1, email: 1 }
+      );
+      userID = currentUser._id;
+      Email = currentUser.email;
+    }
+    return {
+      userID,
+      Email: Email,
+      // pubsub: global.pubsub,
+    };
+  },
 
   port: 5001,
 });
