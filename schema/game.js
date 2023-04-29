@@ -6,10 +6,18 @@ config();
 export const gameSchema = {
   typeDefs: [
     /* GraphQL */ `
+      type Team {
+        _id: String!
+        teamName: String!
+        teamCity: String!
+        Image: String!
+        Coach: String!
+        Players: [String]!
+      }
       type Game {
         _id: String!
-        homeTeam: String!
-        awayTeam: String!
+        homeTeam: Team!
+        awayTeam: Team!
         coach: String!
       }
       input CreateGameInput {
@@ -30,7 +38,10 @@ export const gameSchema = {
     Query: {
       getGames: async (_, {}, { userID }) => {
         try {
-          const myGames = await game.find({ coach: userID });
+          const myGames = await game
+            .find({ coach: userID })
+            .populate("homeTeam")
+            .populate("awayTeam");
           return myGames;
         } catch (error) {
           throw new GraphQLError(error);
@@ -38,7 +49,10 @@ export const gameSchema = {
       },
       getGame: async (_, { gameID }, {}) => {
         try {
-          const myGame = await game.findOne({ _id: gameID });
+          const myGame = await game
+            .findOne({ _id: gameID })
+            .populate("homeTeam")
+            .populate("awayTeam");
           return myGame;
         } catch (error) {
           throw new GraphQLError(error);

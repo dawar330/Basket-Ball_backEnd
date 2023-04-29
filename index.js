@@ -8,7 +8,6 @@ import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 import { global } from "./src/global.js";
 import { connect } from "mongoose";
 import { MONGODB_URL } from "./config.js";
-import { logger } from "./logger/index.js";
 import { config } from "dotenv";
 import user from "./modal/user.js";
 import { getUserByToken } from "./schema/jwt.js";
@@ -38,7 +37,6 @@ const yoga = createYoga({
     let tokenData = await getUserByToken(request.headers.get("bearer"));
     let userID = false;
     let Email = "";
-    console.log(tokenData);
     if (tokenData.email) {
       const currentUser = await user.findOne(
         { email: tokenData.email },

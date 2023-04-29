@@ -14,6 +14,10 @@ export const userSchema = {
         email: String!
         password: String!
       }
+      type UserDetail {
+        fname: String!
+        lname: String!
+      }
       input UserInput {
         id: String!
         fname: String!
@@ -39,7 +43,7 @@ export const userSchema = {
       }
 
       type Query {
-        getUser(id: String!): User
+        getUser(id: String!): UserDetail
         getUserByToken(token: String!): User
       }
       type Mutation {
@@ -61,7 +65,10 @@ export const userSchema = {
       },
       getUser: async (_, { id }) => {
         try {
-          const myUser = await user.findOne({ _id: id });
+          const myUser = await user.findOne(
+            { _id: id },
+            { fname: 1, lname: 1 }
+          );
           return myUser;
         } catch (error) {
           throw new GraphQLError(error);

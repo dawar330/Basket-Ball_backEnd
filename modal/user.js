@@ -5,6 +5,11 @@ const userSchema = new Schema({
   lname: String,
   email: String,
   password: String,
+  role: {
+    type: String,
+    enum: ["Player", "Coach", "Parent"],
+    default: "Player",
+  },
 });
 
 export default model("User", userSchema);
