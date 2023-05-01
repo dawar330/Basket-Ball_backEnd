@@ -19,6 +19,7 @@ export const gameSchema = {
         homeTeam: Team!
         awayTeam: Team!
         coach: String!
+        startTime: String
       }
       input CreateGameInput {
         homeTeam: String!
@@ -66,6 +67,7 @@ export const gameSchema = {
             homeTeam: CreateGameInput.homeTeam,
             awayTeam: CreateGameInput.awayTeam,
             coach: userID,
+            startTime: null,
           });
           myGame.save();
 
