@@ -15,6 +15,7 @@ export const userSchema = {
         password: String!
       }
       type UserDetail {
+        _id: String!
         fname: String!
         lname: String!
       }
@@ -67,7 +68,7 @@ export const userSchema = {
         try {
           const myUser = await user.findOne(
             { _id: id },
-            { fname: 1, lname: 1 }
+            { _id: 1, fname: 1, lname: 1 }
           );
           return myUser;
         } catch (error) {
