@@ -5,13 +5,15 @@ import { userSchema } from "./user.js";
 import { gameSchema } from "./game.js";
 import { commentSchema } from "./comment.js";
 import { teamSchema } from "./team.js";
+import { playSchema } from "./play.js";
 export const schema = createSchema({
   typeDefs: [
     /* GraphQL */ `
       ${userSchema.typeDefs +
       gameSchema.typeDefs +
       commentSchema.typeDefs +
-      teamSchema.typeDefs}
+      teamSchema.typeDefs +
+      playSchema.typeDefs}
     `,
     astFromDirective(GraphQLLiveDirective),
   ],
@@ -21,12 +23,14 @@ export const schema = createSchema({
       ...gameSchema.resolvers.Query,
       ...commentSchema.resolvers.Query,
       ...teamSchema.resolvers.Query,
+      ...playSchema.resolvers.Query,
     },
     Mutation: {
       ...userSchema.resolvers.Mutation,
       ...gameSchema.resolvers.Mutation,
       ...commentSchema.resolvers.Mutation,
       ...teamSchema.resolvers.Mutation,
+      ...playSchema.resolvers.Mutation,
     },
   },
 });
