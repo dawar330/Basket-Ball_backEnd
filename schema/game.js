@@ -16,9 +16,9 @@ export const gameSchema = {
       }
       type Game {
         _id: String!
-        homeTeam: Team!
-        awayTeam: Team!
-        coach: String!
+        homeTeam: Team
+        awayTeam: Team
+        coach: String
         startTime: String
       }
       input CreateGameInput {
@@ -32,6 +32,7 @@ export const gameSchema = {
       }
       type Mutation {
         createGame(CreateGameInput: CreateGameInput!): Game
+        StartGame(gameID: String!): Game
       }
     `,
   ],
@@ -70,6 +71,18 @@ export const gameSchema = {
             startTime: null,
           });
           myGame.save();
+
+          return myGame;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      StartGame: async (_, { gameID }, {}) => {
+        try {
+          const myGame = await game.findByIdAndUpdate(
+            { _id: gameID },
+            { startTime: new Date() }
+          );
 
           return myGame;
         } catch (error) {

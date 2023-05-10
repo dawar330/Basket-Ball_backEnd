@@ -6,11 +6,12 @@ import { createPubSub } from "graphql-yoga";
 import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
 // Create a Yoga instance with a GraphQL schema.
 import { global } from "./src/global.js";
-import { connect } from "mongoose";
+import mongoose, { connect, mongo } from "mongoose";
 import { MONGODB_URL } from "./config.js";
 import { config } from "dotenv";
 import user from "./modal/user.js";
 import { getUserByToken } from "./schema/jwt.js";
+import play from "./modal/play.js";
 config();
 const liveQueryStore = new InMemoryLiveQueryStore();
 global.liveQueryStore = liveQueryStore;
