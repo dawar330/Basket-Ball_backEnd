@@ -4,6 +4,28 @@ import { config } from "dotenv";
 import game from "../modal/game.js";
 import play from "../modal/play.js";
 config();
+
+function createPlayerStats(player) {
+  return {
+    _id: player._id,
+    Player: player.fname + " " + player.lname,
+    FG3: 0,
+    FGA3: 0,
+    FG2: 0,
+    FGA2: 0,
+    FT: 0,
+    FTA: 0,
+    PTS: 0,
+    OFF: 0,
+    DEF: 0,
+    TOT: 0,
+    PF: 0,
+    A: 0,
+    TO: 0,
+    BLOCK: 0,
+    STEAL: 0,
+  };
+}
 export const playSchema = {
   typeDefs: [
     /* GraphQL */ `
@@ -20,7 +42,18 @@ export const playSchema = {
         homeTeam: [PlayerPlays]
         awayTeam: [PlayerPlays]
       }
+      type QuaterlyGamePlayerPlays {
+        homeTeam: QuaterlyPlays
+        awayTeam: QuaterlyPlays
+      }
+      type QuaterlyPlays {
+        Quarter1: [PlayerPlays!]!
+        Quarter2: [PlayerPlays!]!
+        Quarter3: [PlayerPlays!]!
+        Quarter4: [PlayerPlays!]!
+      }
       type PlayerPlays {
+        _id: String
         Player: String
         FG3: Int
         FGA3: Int
@@ -56,6 +89,7 @@ export const playSchema = {
         getGamePlay(gameID: String!): GamePlays
         getScoringGamePlay(gameID: String!): ScoringGamePlay
         getGamePlaysByPlayer(gameID: String!): GamePlayerPlays
+        getQuarterlyGamePlaysByPlayer(gameID: String!): QuaterlyGamePlayerPlays
       }
       type Mutation {
         createPlay(
@@ -128,7 +162,7 @@ export const playSchema = {
           });
 
           // Return the final scores object
-          console.log(scores);
+
           return scores;
         } catch (error) {
           throw new GraphQLError(error);
@@ -179,33 +213,24 @@ export const playSchema = {
       },
       getGamePlaysByPlayer: async (_, { gameID }, {}) => {
         try {
-          let Game = await game
-            .findById({ _id: gameID })
-            .populate("homeTeam awayTeam");
+          const myGame = await game.findById(gameID).populate([
+            { path: "awayTeam", populate: "Players" },
+            { path: "homeTeam", populate: "Players" },
+          ]);
 
-          // find all plays for this game and populate the team and player fields
-          let Plays = await play
-            .find({ Game: Game._id })
+          // Get all of the plays for the game.
+          const plays = await play
+            .find({ Game: myGame._id })
             .populate("Team Player");
 
-          // create an object to hold the player statistics for each team
+          // Aggregate the plays by team and player.
           const teamStats = {
             homeTeam: [],
             awayTeam: [],
           };
 
-          // aggregate the plays by team and player
-          Plays.forEach((play) => {
-            const teamName =
-              play.Team.toString() === Game.homeTeam.toString()
-                ? "homeTeam"
-                : "awayTeam";
-            const playerName = play.Player.fname + " " + play.Player.lname;
-
-            const existingPlayerStats = teamStats[teamName].find(
-              (stats) => stats.Player === playerName
-            );
-            let point = !play.Missed
+          plays.forEach((play) => {
+            const point = !play.Missed
               ? play.PlayType === "Free Throw"
                 ? 1
                 : play.PlayType === "3-Point"
@@ -214,53 +239,199 @@ export const playSchema = {
                 ? 2
                 : 0
               : 0;
-            console.log(point, play);
-            if (existingPlayerStats) {
-              // add to existing player stats
-              existingPlayerStats.FG3 +=
-                play.PlayType === "3-Point" && !play.Missed ? 1 : 0;
-              existingPlayerStats.FGA3 += play.PlayType === "3-Point" ? 1 : 0;
-              existingPlayerStats.FG2 +=
-                play.PlayType === "2-Point" && !play.Missed ? 1 : 0;
-              existingPlayerStats.FGA2 += play.PlayType === "2-Point" ? 1 : 0;
-              existingPlayerStats.FT +=
-                play.PlayType === "Free Throw" && !play.Missed ? 1 : 0;
-              existingPlayerStats.FTA += play.PlayType === "Free Throw" ? 1 : 0;
-              existingPlayerStats.PTS += point;
-              existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
-              existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
-              existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
-              existingPlayerStats.PF += play.PlayType === ("F" || "TF") ? 1 : 0;
-              existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
-              existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
-              existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
-              existingPlayerStats.STEAL += play.PlayType === "STEAL" ? 1 : 0;
-            } else {
-              // create new player stats
-              teamStats[teamName].push({
-                Player: playerName,
-                FG3: play.PlayType === "3-Point" && !play.Missed ? 1 : 0,
-                FGA3: play.PlayType === "3-Point" ? 1 : 0,
-                FG2: play.PlayType === "2-Point" && !play.Missed ? 1 : 0,
-                FGA2: play.PlayType === "2-Point" ? 1 : 0,
-                FT: play.PlayType === "Free Throw" && !play.Missed ? 1 : 0,
-                FTA: play.PlayType === "Free Throw" ? 1 : 0,
-                PTS: point,
-                OFF: play.PlayType === "OFF" ? 1 : 0,
-                DEF: play.PlayType === "DEF" ? 1 : 0,
-                TOT: play.PlayType === "TOT" ? 1 : 0,
-                PF: play.PlayType === ("F" || "TF") ? 1 : 0,
-                A: play.PlayType === "A" ? 1 : 0,
-                TO: play.PlayType === "TO" ? 1 : 0,
-                BLOCK: play.PlayType === "BLOCK" ? 1 : 0,
-                STEAL: play.PlayType === "STEAL" ? 1 : 0,
-              });
+            const teamName =
+              play.Team._id.toString() === myGame.homeTeam._id.toString()
+                ? "homeTeam"
+                : "awayTeam";
+
+            const playerName = play.Player.fname + " " + play.Player.lname;
+
+            // Check if the player already exists in the team stats.
+            let existingPlayerStats = teamStats[teamName].find(
+              (stats) => stats.Player === playerName
+            );
+
+            // If the player does not exist, create a new object for them.
+            if (!existingPlayerStats) {
+              teamStats[teamName].push({ ...createPlayerStats(play.Player) });
+              existingPlayerStats = teamStats[teamName].find(
+                (stats) => stats.Player === playerName
+              );
+            }
+
+            // Update the player statistics for the current play.
+            existingPlayerStats.FG3 +=
+              play.PlayType === "3-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA3 += play.PlayType === "3-Point" ? 1 : 0;
+            existingPlayerStats.FG2 +=
+              play.PlayType === "2-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA2 += play.PlayType === "2-Point" ? 1 : 0;
+            existingPlayerStats.FT +=
+              play.PlayType === "Free Throw" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FTA += play.PlayType === "Free Throw" ? 1 : 0;
+            existingPlayerStats.PTS += point;
+            existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
+            existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
+            existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
+            existingPlayerStats.PF += play.PlayType === ("F" || "TF") ? 1 : 0;
+            existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
+            existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
+            existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
+            existingPlayerStats.STEAL += play.PlayType === "STEAL" ? 1 : 0;
+          });
+          myGame.homeTeam.Players.map((Player) => {
+            if (
+              !teamStats.homeTeam.some(
+                (stats) => stats._id.toString() === Player._id.toString()
+              )
+            ) {
+              teamStats.homeTeam.push({ ...createPlayerStats(Player) });
             }
           });
-
-          // print out the team stats
-          console.log(teamStats);
+          myGame.awayTeam.Players.map((Player) => {
+            if (
+              !teamStats.awayTeam.some(
+                (stats) => stats._id.toString() === Player._id.toString()
+              )
+            ) {
+              teamStats.awayTeam.push({ ...createPlayerStats(Player) });
+            }
+          });
           return teamStats;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      getQuarterlyGamePlaysByPlayer: async (_, { gameID }, {}) => {
+        try {
+          let isDone = false;
+          const myGame = await game.findById(gameID).populate([
+            { path: "awayTeam", populate: "Players" },
+            { path: "homeTeam", populate: "Players" },
+          ]);
+
+          // Get all of the plays for the game.
+          const plays = await play
+            .find({ Game: myGame._id })
+            .populate("Team Player");
+
+          // Aggregate the plays by team and player.
+          const teamStats = {
+            homeTeam: {
+              Quarter1: [],
+              Quarter2: [],
+              Quarter3: [],
+              Quarter4: [],
+            },
+            awayTeam: {
+              Quarter1: [],
+              Quarter2: [],
+              Quarter3: [],
+              Quarter4: [],
+            },
+          };
+
+          plays.forEach((play, index) => {
+            const quarter = Math.floor(
+              (play.Time - myGame.startTime) / (1000 * 60 * 12)
+            );
+            let point = 0;
+            switch (play.PlayType) {
+              case "Free Throw":
+                point = play.Missed ? 0 : 1;
+                break;
+              case "3-Point":
+                point = play.Missed ? 0 : 3;
+                break;
+              case "2-Point":
+                point = play.Missed ? 0 : 2;
+                break;
+              default:
+                point = 0;
+                break;
+            }
+            const teamName =
+              play.Team._id.toString() === myGame.homeTeam._id.toString()
+                ? "homeTeam"
+                : "awayTeam";
+
+            const playerName = play.Player.fname + " " + play.Player.lname;
+
+            // Check if the player already exists in the team stats.
+            let existingPlayerStats = teamStats[teamName][
+              "Quarter" + (quarter + 1)
+            ].find((stats) => stats.Player === playerName);
+
+            // If the player does not exist, create a new object for them.
+            if (!existingPlayerStats) {
+              teamStats[teamName]["Quarter" + (quarter + 1)].push({
+                ...createPlayerStats(play.Player),
+              });
+              existingPlayerStats = teamStats[teamName][
+                "Quarter" + (quarter + 1)
+              ].find((stats) => stats.Player === playerName);
+            }
+
+            // Update the player statistics for the current play.
+            existingPlayerStats.FG3 +=
+              play.PlayType === "3-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA3 += play.PlayType === "3-Point" ? 1 : 0;
+            existingPlayerStats.FG2 +=
+              play.PlayType === "2-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA2 += play.PlayType === "2-Point" ? 1 : 0;
+            existingPlayerStats.FT +=
+              play.PlayType === "Free Throw" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FTA += play.PlayType === "Free Throw" ? 1 : 0;
+            existingPlayerStats.PTS += point;
+            existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
+            existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
+            existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
+            existingPlayerStats.PF += play.PlayType === ("F" || "TF") ? 1 : 0;
+            existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
+            existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
+            existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
+            existingPlayerStats.STEAL += play.PlayType === "STEAL" ? 1 : 0;
+          });
+
+          for (let i = 0; i < 4; i++) {
+            myGame.homeTeam.Players.map((Player) => {
+              if (
+                !teamStats.homeTeam["Quarter" + (i + 1)].some(
+                  (stats) => stats._id.toString() === Player._id.toString()
+                )
+              ) {
+                teamStats.homeTeam["Quarter" + (i + 1)].push({
+                  ...createPlayerStats(Player),
+                });
+              }
+            });
+            myGame.awayTeam.Players.map((Player) => {
+              if (
+                !teamStats.awayTeam["Quarter" + (i + 1)].some(
+                  (stats) => stats._id.toString() === Player._id.toString()
+                )
+              ) {
+                teamStats.awayTeam["Quarter" + (i + 1)].push({
+                  ...createPlayerStats(Player),
+                });
+              }
+            });
+          }
+
+          return {
+            homeTeam: {
+              Quarter1: [...teamStats.homeTeam.Quarter1],
+              Quarter2: [...teamStats.homeTeam.Quarter2],
+              Quarter3: [...teamStats.homeTeam.Quarter3],
+              Quarter4: [...teamStats.homeTeam.Quarter4],
+            },
+            awayTeam: {
+              Quarter1: teamStats.awayTeam.Quarter1,
+              Quarter2: teamStats.awayTeam.Quarter2,
+              Quarter3: teamStats.awayTeam.Quarter3,
+              Quarter4: teamStats.awayTeam.Quarter4,
+            },
+          };
         } catch (error) {
           throw new GraphQLError(error);
         }
@@ -270,7 +441,7 @@ export const playSchema = {
       createPlay: async (
         _,
         { PlayerID, TeamID, PlayType, Missed, GameID },
-        {}
+        { liveQueryStore }
       ) => {
         try {
           const newPlay = new play({
@@ -282,7 +453,13 @@ export const playSchema = {
             Time: new Date(),
           });
           newPlay.save();
-
+          liveQueryStore.invalidate([
+            "Query.getGamePlaysByPlayer",
+            "Query.getQuarterlyGamePlaysByPlayer",
+            "Query.getGamePlay",
+            "Query.getScoringGamePlay",
+            ,
+          ]);
           return newPlay;
         } catch (error) {
           throw new GraphQLError(error);
