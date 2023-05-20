@@ -98,6 +98,7 @@ export const playSchema = {
           PlayType: String!
           Missed: Boolean!
           GameID: String!
+          Quarter: Int!
         ): Play
       }
     `,
@@ -136,9 +137,6 @@ export const playSchema = {
                 : "awayTeam";
 
             // Determine which quarter the play occurred in
-            const quarter = Math.floor(
-              (play.Time - thisGame[0].startTime) / (1000 * 60 * 12)
-            );
 
             // Calculate the score for the play based on the PlayType
             let score;
@@ -158,7 +156,7 @@ export const playSchema = {
             }
 
             // Add the score to the appropriate team and quarter
-            scores[team][quarter] += score;
+            scores[team][play.Quarter - 1] += score;
           });
 
           // Return the final scores object
@@ -222,7 +220,7 @@ export const playSchema = {
           const plays = await play
             .find({ Game: myGame._id })
             .populate("Team Player");
-
+          console.log(plays);
           // Aggregate the plays by team and player.
           const teamStats = {
             homeTeam: [],
@@ -332,9 +330,6 @@ export const playSchema = {
           };
 
           plays.forEach((play, index) => {
-            const quarter = Math.floor(
-              (play.Time - myGame.startTime) / (1000 * 60 * 12)
-            );
             let point = 0;
             switch (play.PlayType) {
               case "Free Throw":
@@ -359,16 +354,16 @@ export const playSchema = {
 
             // Check if the player already exists in the team stats.
             let existingPlayerStats = teamStats[teamName][
-              "Quarter" + (quarter + 1)
+              "Quarter" + play.Quarter
             ].find((stats) => stats.Player === playerName);
 
             // If the player does not exist, create a new object for them.
             if (!existingPlayerStats) {
-              teamStats[teamName]["Quarter" + (quarter + 1)].push({
+              teamStats[teamName]["Quarter" + play.Quarter].push({
                 ...createPlayerStats(play.Player),
               });
               existingPlayerStats = teamStats[teamName][
-                "Quarter" + (quarter + 1)
+                "Quarter" + play.Quarter
               ].find((stats) => stats.Player === playerName);
             }
 
@@ -440,7 +435,7 @@ export const playSchema = {
     Mutation: {
       createPlay: async (
         _,
-        { PlayerID, TeamID, PlayType, Missed, GameID },
+        { PlayerID, TeamID, PlayType, Missed, GameID, Quarter },
         { liveQueryStore }
       ) => {
         try {
@@ -450,6 +445,7 @@ export const playSchema = {
             Team: TeamID,
             Missed: Missed,
             Game: GameID,
+            Quarter: Quarter,
             Time: new Date(),
           });
           newPlay.save();
