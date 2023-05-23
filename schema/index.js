@@ -6,6 +6,7 @@ import { gameSchema } from "./game.js";
 import { commentSchema } from "./comment.js";
 import { teamSchema } from "./team.js";
 import { playSchema } from "./play.js";
+import { TimeOutSchema } from "./TimeOut.js";
 export const schema = createSchema({
   typeDefs: [
     /* GraphQL */ `
@@ -13,7 +14,8 @@ export const schema = createSchema({
       gameSchema.typeDefs +
       commentSchema.typeDefs +
       teamSchema.typeDefs +
-      playSchema.typeDefs}
+      playSchema.typeDefs +
+      TimeOutSchema.typeDefs}
     `,
     astFromDirective(GraphQLLiveDirective),
   ],
@@ -24,6 +26,7 @@ export const schema = createSchema({
       ...commentSchema.resolvers.Query,
       ...teamSchema.resolvers.Query,
       ...playSchema.resolvers.Query,
+      ...TimeOutSchema.resolvers.Query,
     },
     Mutation: {
       ...userSchema.resolvers.Mutation,
@@ -31,6 +34,7 @@ export const schema = createSchema({
       ...commentSchema.resolvers.Mutation,
       ...teamSchema.resolvers.Mutation,
       ...playSchema.resolvers.Mutation,
+      ...TimeOutSchema.resolvers.Mutation,
     },
   },
 });

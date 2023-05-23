@@ -209,6 +209,7 @@ export const playSchema = {
           throw new GraphQLError(error);
         }
       },
+
       getGamePlaysByPlayer: async (_, { gameID }, {}) => {
         try {
           const myGame = await game.findById(gameID).populate([
@@ -220,7 +221,7 @@ export const playSchema = {
           const plays = await play
             .find({ Game: myGame._id })
             .populate("Team Player");
-          console.log(plays);
+
           // Aggregate the plays by team and player.
           const teamStats = {
             homeTeam: [],
@@ -271,7 +272,9 @@ export const playSchema = {
             existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
             existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
             existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
-            existingPlayerStats.PF += play.PlayType === ("F" || "TF") ? 1 : 0;
+            existingPlayerStats.PF += ["F", "TF"].includes(play.PlayType)
+              ? 1
+              : 0;
             existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
             existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
             existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
@@ -381,7 +384,9 @@ export const playSchema = {
             existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
             existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
             existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
-            existingPlayerStats.PF += play.PlayType === ("F" || "TF") ? 1 : 0;
+            existingPlayerStats.PF += ["F", "TF"].includes(play.PlayType)
+              ? 1
+              : 0;
             existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
             existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
             existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
