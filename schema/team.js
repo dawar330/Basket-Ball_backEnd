@@ -111,7 +111,8 @@ export const teamSchema = {
       },
       getTeams: async (_, {}, { userID }) => {
         try {
-          const myTeams = await team.find({ Coach: userID });
+          //TODO Verify That all Teams Should Appear or not
+          const myTeams = await team.find();
 
           return myTeams;
         } catch (error) {

@@ -42,11 +42,75 @@ export const gameSchema = {
     Query: {
       getGames: async (_, {}, { userID }) => {
         try {
-          const myGames = await game
-            .find({ coach: userID })
-            .populate("homeTeam")
-            .populate("awayTeam");
-          return myGames;
+          let User = await user.findById({ _id: userID });
+          if (User.role === "Player") {
+            const myGames = await game.aggregate([
+              {
+                $lookup: {
+                  from: "teams",
+                  localField: "homeTeam",
+                  foreignField: "_id",
+                  as: "Home",
+                },
+              },
+              {
+                $lookup: {
+                  from: "teams",
+                  localField: "awayTeam",
+                  foreignField: "_id",
+                  as: "away",
+                },
+              },
+              {
+                $project: {
+                  homeTeam: {
+                    $arrayElemAt: ["$Home", 0],
+                  },
+                  awayTeam: {
+                    $arrayElemAt: ["$away", 0],
+                  },
+                  coach: 1,
+                  TimeOutLimit: 1,
+                  FoulLimit: 1,
+                  startTime: 1,
+                  home: {
+                    $arrayElemAt: ["$Home.Players", 0],
+                  },
+                  away: {
+                    $arrayElemAt: ["$away.Players", 0],
+                  },
+                },
+              },
+              {
+                $match: {
+                  $or: [
+                    {
+                      home: userID,
+                    },
+                    {
+                      away: userID,
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  home: 0,
+                  away: 0,
+                },
+              },
+            ]);
+
+            return myGames;
+          } else {
+            const myGames = await game
+              .find({ coach: userID })
+              .populate("homeTeam")
+              .populate("awayTeam");
+
+            console.log("here", myGames);
+            return myGames;
+          }
         } catch (error) {
           throw new GraphQLError(error);
         }

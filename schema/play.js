@@ -85,7 +85,6 @@ export const playSchema = {
       }
 
       type Query {
-        getGames: [Game]
         getGamePlay(gameID: String!): GamePlays
         getScoringGamePlay(gameID: String!): ScoringGamePlay
         getGamePlaysByPlayer(gameID: String!): GamePlayerPlays
@@ -105,17 +104,6 @@ export const playSchema = {
   ],
   resolvers: {
     Query: {
-      getGames: async (_, {}, { userID }) => {
-        try {
-          const myGames = await game
-            .find({ coach: userID })
-            .populate("homeTeam")
-            .populate("awayTeam");
-          return myGames;
-        } catch (error) {
-          throw new GraphQLError(error);
-        }
-      },
       getGamePlay: async (_, { gameID }, {}) => {
         try {
           const plays = await play.find({ Game: gameID, Missed: false });

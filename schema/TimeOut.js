@@ -9,10 +9,9 @@ export const TimeOutSchema = {
     /* GraphQL */ `
       type TimeOut {
         _id: String
-
         Team: String
         Secs: String
-
+        Quarter: Int
         Time: String
         GameID: String
       }
@@ -68,6 +67,7 @@ export const TimeOutSchema = {
           });
           // Return the final scores object
           // console.log(Plays);
+          console.log(T_Outs);
           return T_Outs;
         } catch (error) {
           throw new GraphQLError(error);

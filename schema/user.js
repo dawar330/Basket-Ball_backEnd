@@ -31,6 +31,7 @@ export const userSchema = {
         lastname: String!
         email: String!
         password: String!
+        Role: String!
       }
       input loginInput {
         email: String!
@@ -41,6 +42,7 @@ export const userSchema = {
         email: String!
         first_name: String!
         last_name: String!
+        Role: String!
       }
 
       type Query {
@@ -83,13 +85,14 @@ export const userSchema = {
             email: loginInput.email,
             password: loginInput.password,
           });
-          var accessToken = getJwt(User.email, "couch");
+          var accessToken = getJwt(User.email, User.role);
 
           return {
             api_token: accessToken,
             email: User.email,
             first_name: User.fname,
             last_name: User.lname,
+            Role: User.role,
           };
         } catch (error) {
           throw new GraphQLError(error);
@@ -102,15 +105,17 @@ export const userSchema = {
             lname: registerUserInput.lastname,
             email: registerUserInput.email,
             password: registerUserInput.password,
+            role: registerUserInput.Role,
           });
           newUser.save();
-          var accessToken = getJwt(registerUserInput.email, "couch");
+          var accessToken = getJwt(registerUserInput.email, role);
 
           return {
             api_token: accessToken,
             email: registerUserInput.email,
             first_name: registerUserInput.firstname,
             last_name: registerUserInput.lastname,
+            Role: registerUserInput.Role,
           };
         } catch (error) {
           throw new GraphQLError(error);
