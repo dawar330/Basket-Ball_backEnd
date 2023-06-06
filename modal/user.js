@@ -7,9 +7,10 @@ const userSchema = new Schema({
   password: String,
   role: {
     type: String,
-    enum: ["Player", "Coach", "Parent"],
+    enum: ["Player", "Coach"],
     default: "Player",
   },
+  avatar: { type: String, default: "" },
 });
 
 export default model("User", userSchema);

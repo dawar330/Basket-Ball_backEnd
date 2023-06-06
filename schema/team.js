@@ -17,6 +17,14 @@ export const teamSchema = {
         Coach: String!
         Players: [String]!
       }
+      type TeamInfo {
+        _id: String!
+        teamName: String!
+        teamCity: String!
+        Image: String!
+        Coach: String!
+        Players: [Player]!
+      }
       type TeamStat {
         points: Int
         rebounds: Int
@@ -24,18 +32,29 @@ export const teamSchema = {
         steals: Int
       }
       type Player {
+        _id: String!
         fname: String!
         lname: String!
+        avatar: String
       }
 
       type Query {
         getTeams: [Team]
         getTeam(teamID: String!): Team
+        getTeamsInfo: [TeamInfo]
         getTeamPlayers(teamID: String!): [Player]
         getTeamStats(teamID: String!): TeamStat
       }
       type Mutation {
         createTeam(teamName: String!, teamCity: String!, Image: String!): Team
+        updateTeamInfo(
+          teamID: String!
+          teamName: String!
+          teamCity: String!
+          Image: String!
+        ): Team
+        RemoveTeamPlayer(teamID: String!, PlayerID: String!): Boolean
+        addTeamPlayer(teamID: String!, PlayerIDs: [String!]): Boolean
       }
     `,
   ],
@@ -45,7 +64,7 @@ export const teamSchema = {
         try {
           const myTeam = await team.find({ _id: teamID });
 
-          return myTeam;
+          return myTeam[0];
         } catch (error) {
           throw new GraphQLError(error);
         }
@@ -119,6 +138,18 @@ export const teamSchema = {
           throw new GraphQLError(error);
         }
       },
+      getTeamsInfo: async (_, {}, { userID }) => {
+        try {
+          //TODO Verify That all Teams Should Appear or not
+          const myTeams = await team
+            .find({ Coach: userID })
+            .populate("Players");
+
+          return myTeams;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
       getTeamPlayers: async (_, { teamID }) => {
         try {
           const TeamPlayer = await team
@@ -144,6 +175,51 @@ export const teamSchema = {
           newTeam.save();
 
           return newTeam;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      updateTeamInfo: async (_, { Image, teamName, teamCity, teamID }, {}) => {
+        try {
+          const newTeam = await team.findByIdAndUpdate(
+            { _id: teamID },
+            {
+              teamName: teamName,
+              teamCity: teamCity,
+              Image: Image,
+            }
+          );
+          return newTeam;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      RemoveTeamPlayer: async (_, { teamID, PlayerID }, {}) => {
+        try {
+          const newTeam = await team.findByIdAndUpdate(
+            { _id: teamID },
+            {
+              $pull: {
+                Players: PlayerID,
+              },
+            }
+          );
+          return true;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      addTeamPlayer: async (_, { teamID, PlayerIDs }, {}) => {
+        try {
+          const newTeam = await team.findByIdAndUpdate(
+            { _id: teamID },
+            {
+              $push: {
+                Players: PlayerIDs,
+              },
+            }
+          );
+          return true;
         } catch (error) {
           throw new GraphQLError(error);
         }

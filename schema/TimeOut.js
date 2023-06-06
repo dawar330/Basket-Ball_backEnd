@@ -66,8 +66,7 @@ export const TimeOutSchema = {
             T_Outs[team].push(Timeout);
           });
           // Return the final scores object
-          // console.log(Plays);
-          console.log(T_Outs);
+
           return T_Outs;
         } catch (error) {
           throw new GraphQLError(error);

@@ -3,6 +3,7 @@ import { GraphQLError } from "graphql";
 import { config } from "dotenv";
 import pkg from "jsonwebtoken";
 import { getJwt, getUserByToken } from "./jwt.js";
+import team from "../modal/team.js";
 const Jwt = pkg;
 config();
 export const userSchema = {
@@ -13,11 +14,14 @@ export const userSchema = {
         lname: String!
         email: String!
         password: String!
+        avatar: String!
       }
       type UserDetail {
-        _id: String!
+        _id: String
+        email: String
         fname: String!
         lname: String!
+        avatar: String!
       }
       input UserInput {
         id: String!
@@ -32,6 +36,7 @@ export const userSchema = {
         email: String!
         password: String!
         Role: String!
+        Team: String
       }
       input loginInput {
         email: String!
@@ -47,12 +52,16 @@ export const userSchema = {
 
       type Query {
         getUser(id: String!): UserDetail
+        getPlayers: [UserDetail]
         getUserByToken(token: String!): User
       }
       type Mutation {
         updateUser(UserInput: UserInput!): User
         register(registerUserInput: registerUserInput!): auth
         login(loginInput: loginInput!): auth
+        updateUserInfo(lname: String, fname: String, avatar: String): User
+        UpdateEmail(email: String, PassWord: String): Boolean
+        UpdatePass(newPass: String, PassWord: String): Boolean
       }
     `,
   ],
@@ -70,8 +79,20 @@ export const userSchema = {
         try {
           const myUser = await user.findOne(
             { _id: id },
-            { _id: 1, fname: 1, lname: 1 }
+            { _id: 1, fname: 1, lname: 1, avatar: 1 }
           );
+          return myUser;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      getPlayers: async (_, {}) => {
+        try {
+          const myUser = await user.find(
+            { role: "Player" },
+            { _id: 1, fname: 1, lname: 1, avatar: 1, email: 1 }
+          );
+
           return myUser;
         } catch (error) {
           throw new GraphQLError(error);
@@ -108,8 +129,20 @@ export const userSchema = {
             role: registerUserInput.Role,
           });
           newUser.save();
-          var accessToken = getJwt(registerUserInput.email, role);
-
+          var accessToken = getJwt(
+            registerUserInput.email,
+            registerUserInput.Role
+          );
+          if (registerUserInput.Role === "Player") {
+            const addPlayerToTeam = await team.findByIdAndUpdate(
+              { _id: registerUserInput.Team },
+              {
+                $push: {
+                  Players: newUser._id,
+                },
+              }
+            );
+          }
           return {
             api_token: accessToken,
             email: registerUserInput.email,
@@ -134,6 +167,63 @@ export const userSchema = {
             }
           );
           return myUser;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      updateUserInfo: async (_, { lname, fname, avatar }, { userID }) => {
+        try {
+          const myUser = await user.findByIdAndUpdate(
+            { _id: userID },
+            { fname: fname, lname: lname, avatar: avatar },
+            {
+              new: true,
+            }
+          );
+          return myUser;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+
+      UpdateEmail: async (_, { email, PassWord }, { userID }) => {
+        try {
+          const users = await user.findById({ _id: userID });
+
+          if (users.password === PassWord) {
+            const myUser = await user.findByIdAndUpdate(
+              { _id: userID },
+              { email: email },
+              {
+                new: true,
+              }
+            );
+
+            return true;
+          } else {
+            return false;
+          }
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      UpdatePass: async (_, { newPass, PassWord }, { userID }) => {
+        try {
+          const users = await user.findById({ _id: userID });
+
+          if (users.password === PassWord) {
+            const myUser = await user.findByIdAndUpdate(
+              { _id: userID },
+              { password: newPass },
+              {
+                new: true,
+              }
+            );
+
+            return true;
+          } else {
+            return false;
+          }
         } catch (error) {
           throw new GraphQLError(error);
         }

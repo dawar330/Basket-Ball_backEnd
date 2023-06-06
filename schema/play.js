@@ -191,7 +191,7 @@ export const playSchema = {
             Plays[team].push(play);
           });
           // Return the final scores object
-          // console.log(Plays);
+
           return Plays;
         } catch (error) {
           throw new GraphQLError(error);
