@@ -11,6 +11,10 @@ const userSchema = new Schema({
     default: "Player",
   },
   avatar: { type: String, default: "" },
+  AvailableGames: {
+    type: Number,
+    default: 0,
+  },
 });
 
 export default model("User", userSchema);

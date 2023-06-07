@@ -15,6 +15,7 @@ export const userSchema = {
         email: String!
         password: String!
         avatar: String!
+        AvailableGames: Int!
       }
       type UserDetail {
         _id: String

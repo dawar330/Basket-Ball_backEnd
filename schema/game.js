@@ -241,17 +241,32 @@ export const gameSchema = {
     Mutation: {
       createGame: async (_, { CreateGameInput }, { userID }) => {
         try {
-          const myGame = new game({
-            homeTeam: CreateGameInput.homeTeam,
-            awayTeam: CreateGameInput.awayTeam,
-            coach: userID,
-            TimeOutLimit: 6,
-            FoulLimit: 3,
-            startTime: null,
-          });
-          myGame.save();
+          const CurrentUser = await user.find({ _id: userID });
 
-          return myGame;
+          if (CurrentUser.AvailableGames > 0) {
+            const myGame = new game({
+              homeTeam: CreateGameInput.homeTeam,
+              awayTeam: CreateGameInput.awayTeam,
+              coach: userID,
+              TimeOutLimit: 6,
+              FoulLimit: 3,
+              startTime: null,
+            });
+            CurrentUser.AvailableGames -= 1;
+            CurrentUser.save();
+            myGame.save();
+
+            return myGame;
+          } else {
+            return {
+              homeTeam: "",
+              awayTeam: "",
+              coach: "",
+              TimeOutLimit: 0,
+              FoulLimit: 0,
+              startTime: null,
+            };
+          }
         } catch (error) {
           throw new GraphQLError(error);
         }
