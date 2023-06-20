@@ -69,6 +69,7 @@ export const teamSchema = {
           throw new GraphQLError(error);
         }
       },
+
       getTeamStats: async (_, { teamID }, {}) => {
         try {
           const teamStats = await play.aggregate([

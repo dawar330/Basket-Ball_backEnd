@@ -89,6 +89,7 @@ export const playSchema = {
         getScoringGamePlay(gameID: String!): ScoringGamePlay
         getGamePlaysByPlayer(gameID: String!): GamePlayerPlays
         getQuarterlyGamePlaysByPlayer(gameID: String!): QuaterlyGamePlayerPlays
+        getGamePlayerPlays: PlayerPlays
       }
       type Mutation {
         createPlay(
@@ -154,6 +155,7 @@ export const playSchema = {
           throw new GraphQLError(error);
         }
       },
+
       getScoringGamePlay: async (_, { gameID }, {}) => {
         try {
           const plays = await play
@@ -287,6 +289,72 @@ export const playSchema = {
             }
           });
           return teamStats;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      getGamePlayerPlays: async (_, {}, { userID }) => {
+        try {
+          // Get all of the plays for the game.
+          const plays = await play.find({ Player: userID });
+
+          // Aggregate the plays by team and player.
+          let existingPlayerStats = {
+            FG3: 0,
+            FGA3: 0,
+            FG2: 0,
+            FGA2: 0,
+            FT: 0,
+            FTA: 0,
+            PTS: 0,
+            OFF: 0,
+            DEF: 0,
+            TOT: 0,
+            PF: 0,
+            A: 0,
+            TO: 0,
+            BLOCK: 0,
+            STEAL: 0,
+          };
+          plays.forEach((play) => {
+            const point = !play.Missed
+              ? play.PlayType === "Free Throw"
+                ? 1
+                : play.PlayType === "3-Point"
+                ? 3
+                : play.PlayType === "2-Point"
+                ? 2
+                : 0
+              : 0;
+            console.log(play);
+            // Check if the player already exists in the team stats.
+
+            // If the player does not exist, create a new object for them.
+
+            // Update the player statistics for the current play.
+            existingPlayerStats.FG3 +=
+              play.PlayType === "3-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA3 += play.PlayType === "3-Point" ? 1 : 0;
+            existingPlayerStats.FG2 +=
+              play.PlayType === "2-Point" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FGA2 += play.PlayType === "2-Point" ? 1 : 0;
+            existingPlayerStats.FT +=
+              play.PlayType === "Free Throw" && !play.Missed ? 1 : 0;
+            existingPlayerStats.FTA += play.PlayType === "Free Throw" ? 1 : 0;
+            existingPlayerStats.PTS += point;
+            existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
+            existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
+            existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
+            existingPlayerStats.PF += ["F", "TF"].includes(play.PlayType)
+              ? 1
+              : 0;
+            existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
+            existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
+            existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
+            existingPlayerStats.STEAL += play.PlayType === "STEAL" ? 1 : 0;
+          });
+          console.log(existingPlayerStats);
+          return existingPlayerStats;
         } catch (error) {
           throw new GraphQLError(error);
         }

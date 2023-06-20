@@ -11,7 +11,8 @@ import { MONGODB_URL } from "./config.js";
 import { config } from "dotenv";
 import user from "./modal/user.js";
 import { getUserByToken } from "./schema/jwt.js";
-import play from "./modal/play.js";
+import pkg from "express";
+const Express = pkg;
 config();
 const liveQueryStore = new InMemoryLiveQueryStore();
 global.liveQueryStore = liveQueryStore;
@@ -58,10 +59,40 @@ const yoga = createYoga({
 
 // Pass it into a server to hook into request handlers.
 const server = createServer(yoga);
+const app = Express();
+
+// Define your route for the webhook endpoint
+app.post("/web", Express.raw({ type: "application/json" }), (req, res) => {
+  const payload = req.body;
+  const sig = req.headers["stripe-signature"];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      payload,
+      sig,
+      "YOUR_STRIPE_WEBHOOK_SECRET"
+    );
+  } catch (err) {
+    console.log("Webhook signature verification failed.");
+    return res.sendStatus(400);
+  }
+
+  // Handle the specific event type (e.g., payment_intent.succeeded)
+  if (event.type === "payment_intent.succeeded") {
+    // Perform your Node.js task here
+    console.log("Payment succeeded. Perform task here.");
+  }
+
+  res.sendStatus(200);
+});
 
 // Start the server and you're done!
 let port = 4000;
-
+app.listen({ port: 3000 }, () =>
+  console.log(`Server running at http://localhost:4001`)
+);
 connect(MONGODB_URL, { useNewUrlParser: true }).then(() => {
   console.log("MONGODB Connected");
   server.listen(port, () => {

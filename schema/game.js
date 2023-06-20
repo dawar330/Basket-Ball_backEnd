@@ -31,11 +31,23 @@ export const gameSchema = {
         Win: Int!
         Loss: Int!
       }
+      type getRecentGamesStats {
+        _id: String!
+        Points: Int!
+        TournOvers: Int!
+        Steal: Int!
+        ReboundOFF: Int!
+        ReboundDEF: Int!
+        BLOCK: Int!
+        Assist: Int!
+      }
       type Query {
         getGames: [Game]
         getGame(gameID: String!): Game
         getSeasonOverView: SeasonOverView
+        getRecentGamesStats: [getRecentGamesStats]
       }
+
       type Mutation {
         createGame(CreateGameInput: CreateGameInput!): Game
         StartGame(gameID: String!): Game
@@ -56,7 +68,7 @@ export const gameSchema = {
     Query: {
       getGames: async (_, {}, { userID }) => {
         try {
-          let User = await user.findById({ _id: userID });
+          // let User = await user.findById({ _id: userID });
           // if (User.role === "Player") {
           //   const myGames = await game.aggregate([
           //     {
@@ -139,6 +151,139 @@ export const gameSchema = {
           throw new GraphQLError(error);
         }
       },
+      getRecentGamesStats: async (_, {}, { userID }) => {
+        try {
+          const myGame = await game.aggregate([
+            {
+              $match: {
+                coach: userID,
+              },
+            },
+            {
+              $lookup: {
+                from: "plays",
+                localField: "_id",
+                foreignField: "Game",
+                as: "Plays",
+              },
+            },
+            {
+              $project: {
+                Plays: 1,
+              },
+            },
+            {
+              $unwind: {
+                path: "$Plays",
+                preserveNullAndEmptyArrays: false,
+              },
+            },
+            {
+              $group: {
+                _id: "$Plays.Game",
+                Points: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "2-Point"],
+                      },
+                      2,
+                      {
+                        $cond: [
+                          {
+                            $eq: ["$Plays.PlayType", "3-Point"],
+                          },
+                          3,
+                          {
+                            $cond: [
+                              {
+                                $eq: ["$Plays.PlayType", "Free Throw"],
+                              },
+                              1,
+                              0,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                },
+                Assist: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "A"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                TournOvers: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "TO"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                Steal: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "STEAL"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                ReboundOFF: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "OFF"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                ReboundDEF: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "DEF"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                BLOCK: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: ["$Plays.PlayType", "BLOCK"],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ]);
+
+          return myGame;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+
       getSeasonOverView: async (_, {}, { userID }) => {
         try {
           const myGame = await game.aggregate([
@@ -219,21 +364,32 @@ export const gameSchema = {
           ]);
           let Win = 0;
           let Loss = 0;
+
           myGame.forEach((Game) => {
             let HomeScore = 0;
             let AwayScore = 0;
-            if (Game.GamePlays[0]._id === 1) {
+            if (Game.GamePlays[0]?._id === 1) {
               HomeScore = Game.GamePlays[0]?.Score;
-            } else {
+            }
+            if (Game.GamePlays[1]?._id === 1) {
+              HomeScore = Game.GamePlays[1]?.Score;
+            }
+            if (Game.GamePlays[1]?._id === 0) {
               AwayScore = Game.GamePlays[1]?.Score;
             }
+            if (Game.GamePlays[0]?._id === 0) {
+              AwayScore = Game.GamePlays[0]?.Score;
+            }
             if (HomeScore > AwayScore) {
-              Win++;
-            } else Loss++;
+              ++Win;
+            } else {
+              ++Loss;
+            }
           });
 
           return { Win, Loss };
         } catch (error) {
+          console.log(error);
           throw new GraphQLError(error);
         }
       },
@@ -241,7 +397,7 @@ export const gameSchema = {
     Mutation: {
       createGame: async (_, { CreateGameInput }, { userID }) => {
         try {
-          const CurrentUser = await user.find({ _id: userID });
+          const CurrentUser = await user.findOne({ _id: userID });
 
           if (CurrentUser.AvailableGames > 0) {
             const myGame = new game({

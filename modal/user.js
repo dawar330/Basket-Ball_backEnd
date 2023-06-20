@@ -13,7 +13,7 @@ const userSchema = new Schema({
   avatar: { type: String, default: "" },
   AvailableGames: {
     type: Number,
-    default: 0,
+    default: 6,
   },
 });
 
