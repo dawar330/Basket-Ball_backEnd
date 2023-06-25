@@ -37,7 +37,6 @@ export const userSchema = {
         email: String!
         password: String!
         Role: String!
-        Team: String
       }
       input loginInput {
         email: String!
@@ -134,16 +133,7 @@ export const userSchema = {
             registerUserInput.email,
             registerUserInput.Role
           );
-          if (registerUserInput.Role === "Player") {
-            const addPlayerToTeam = await team.findByIdAndUpdate(
-              { _id: registerUserInput.Team },
-              {
-                $push: {
-                  Players: newUser._id,
-                },
-              }
-            );
-          }
+
           return {
             api_token: accessToken,
             email: registerUserInput.email,

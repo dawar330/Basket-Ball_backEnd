@@ -164,7 +164,11 @@ export const teamSchema = {
       },
     },
     Mutation: {
-      createTeam: async (_, { Image, teamName, teamCity }, { userID }) => {
+      createTeam: async (
+        _,
+        { Image, teamName, teamCity },
+        { userID, liveQueryStore }
+      ) => {
         try {
           const newTeam = new team({
             teamName: teamName,
@@ -174,7 +178,7 @@ export const teamSchema = {
             Players: [],
           });
           newTeam.save();
-
+          liveQueryStore.invalidate(["Query.getTeamsInfo"]);
           return newTeam;
         } catch (error) {
           throw new GraphQLError(error);
