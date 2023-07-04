@@ -7,6 +7,11 @@ const gameSchema = new Schema({
   TimeOutLimit: Number,
   FoulLimit: Number,
   startTime: Date,
+  endTime: Date,
+
+  ScheduledDate: Date,
+  TimeDistribution: String,
+  TotalTime: Number,
 });
 
 export default model("Game", gameSchema);

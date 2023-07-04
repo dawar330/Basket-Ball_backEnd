@@ -6,12 +6,14 @@ config();
 export const gameSchema = {
   typeDefs: [
     /* GraphQL */ `
+      scalar Void
       type Team {
         _id: String!
         teamName: String!
         teamCity: String!
         Image: String!
         Coach: String!
+        Color: String!
         Players: [String]!
       }
       type Game {
@@ -20,12 +22,23 @@ export const gameSchema = {
         awayTeam: Team
         coach: String
         startTime: String
+        endTime: String
         TimeOutLimit: Int
         FoulLimit: Int
+        ScheduledDate: String
+        TimeDistribution: String
+        TotalTime: Int!
       }
+
       input CreateGameInput {
         homeTeam: String!
-        awayTeam: String!
+        awayTeam: String
+        FoulLimit: Int!
+        TimeOutLimit: Int!
+        ScheduledDate: String!
+        TimeDistribution: String!
+        TotalTime: Int!
+        vs: Boolean!
       }
       type SeasonOverView {
         Win: Int!
@@ -50,7 +63,8 @@ export const gameSchema = {
 
       type Mutation {
         createGame(CreateGameInput: CreateGameInput!): Game
-        StartGame(gameID: String!): Game
+        StartGame(gameID: String!): Void
+        EndGame(gameID: String!): Void
         UpdateGameFoulLimit(
           gameID: String!
           PassWord: String!
@@ -60,6 +74,11 @@ export const gameSchema = {
           gameID: String!
           PassWord: String!
           newLimit: Int!
+        ): Boolean
+        UpdateGameTimeDistribution(
+          gameID: String!
+          PassWord: String!
+          newLimit: String!
         ): Boolean
       }
     `,
@@ -85,6 +104,7 @@ export const gameSchema = {
             .findOne({ _id: gameID })
             .populate("homeTeam")
             .populate("awayTeam");
+          console.log(myGame);
           return myGame;
         } catch (error) {
           throw new GraphQLError(error);
@@ -345,11 +365,15 @@ export const gameSchema = {
           if (CurrentUser.AvailableGames > 0) {
             const myGame = new game({
               homeTeam: CreateGameInput.homeTeam,
-              awayTeam: CreateGameInput.awayTeam,
+              awayTeam: CreateGameInput.vs ? CreateGameInput.awayTeam : null,
               coach: userID,
-              TimeOutLimit: 6,
-              FoulLimit: 3,
+              TimeOutLimit: CreateGameInput.TimeOutLimit,
+              FoulLimit: CreateGameInput.FoulLimit,
+              ScheduledDate: CreateGameInput.ScheduledDate,
+              TimeDistribution: CreateGameInput.TimeDistribution,
+              TotalTime: CreateGameInput.TotalTime,
               startTime: null,
+              endTime: null,
             });
             CurrentUser.AvailableGames -= 1;
             CurrentUser.save();
@@ -370,14 +394,24 @@ export const gameSchema = {
           throw new GraphQLError(error);
         }
       },
-      StartGame: async (_, { gameID }, {}) => {
+      StartGame: async (_, { gameID }, { liveQueryStore }) => {
         try {
           const myGame = await game.findByIdAndUpdate(
             { _id: gameID },
             { startTime: new Date() }
           );
-
-          return myGame;
+          liveQueryStore.invalidate(["Query.getGame"]);
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      EndGame: async (_, { gameID }, { liveQueryStore }) => {
+        try {
+          const myGame = await game.findByIdAndUpdate(
+            { _id: gameID },
+            { endTime: new Date() }
+          );
+          liveQueryStore.invalidate(["Query.getGame"]);
         } catch (error) {
           throw new GraphQLError(error);
         }
@@ -385,7 +419,7 @@ export const gameSchema = {
       UpdateGameFoulLimit: async (
         _,
         { gameID, PassWord, newLimit },
-        { userID }
+        { userID, liveQueryStore }
       ) => {
         try {
           const users = await user.findById({ _id: userID });
@@ -395,7 +429,7 @@ export const gameSchema = {
               { _id: gameID },
               { FoulLimit: newLimit }
             );
-
+            liveQueryStore.invalidate(["Query.getGame"]);
             return true;
           } else {
             return false;
@@ -407,7 +441,7 @@ export const gameSchema = {
       UpdateGameTimeOutLimit: async (
         _,
         { gameID, PassWord, newLimit },
-        { userID }
+        { userID, liveQueryStore }
       ) => {
         try {
           const users = await user.findById({ _id: userID });
@@ -417,7 +451,29 @@ export const gameSchema = {
               { _id: gameID },
               { TimeOutLimit: newLimit }
             );
+            liveQueryStore.invalidate(["Query.getGame"]);
+            return true;
+          } else {
+            return false;
+          }
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      UpdateGameTimeDistribution: async (
+        _,
+        { gameID, PassWord, newLimit },
+        { userID, liveQueryStore }
+      ) => {
+        try {
+          const users = await user.findById({ _id: userID });
 
+          if (users.password === PassWord) {
+            const myGame = await game.findByIdAndUpdate(
+              { _id: gameID },
+              { TimeDistribution: newLimit }
+            );
+            liveQueryStore.invalidate(["Query.getGame"]);
             return true;
           } else {
             return false;

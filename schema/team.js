@@ -40,13 +40,18 @@ export const teamSchema = {
 
       type Query {
         getTeams: [Team]
-        getTeam(teamID: String!): Team
+        getTeam(teamID: String!): TeamInfo
         getTeamsInfo: [TeamInfo]
         getTeamPlayers(teamID: String!): [Player]
         getTeamStats(teamID: String!): TeamStat
       }
       type Mutation {
-        createTeam(teamName: String!, teamCity: String!, Image: String!): Team
+        createTeam(
+          teamName: String!
+          teamCity: String!
+          Image: String!
+          Color: String!
+        ): Team
         updateTeamInfo(
           teamID: String!
           teamName: String!
@@ -62,8 +67,7 @@ export const teamSchema = {
     Query: {
       getTeam: async (_, { teamID }, {}) => {
         try {
-          const myTeam = await team.find({ _id: teamID });
-
+          const myTeam = await team.find({ _id: teamID }).populate("Players");
           return myTeam[0];
         } catch (error) {
           throw new GraphQLError(error);
@@ -166,15 +170,17 @@ export const teamSchema = {
     Mutation: {
       createTeam: async (
         _,
-        { Image, teamName, teamCity },
+        { Image, Color, teamName, teamCity },
         { userID, liveQueryStore }
       ) => {
+        console.log(Color);
         try {
           const newTeam = new team({
             teamName: teamName,
             teamCity: teamCity,
             Image: Image,
             Coach: userID,
+            Color: Color,
             Players: [],
           });
           newTeam.save();
@@ -199,7 +205,7 @@ export const teamSchema = {
           throw new GraphQLError(error);
         }
       },
-      RemoveTeamPlayer: async (_, { teamID, PlayerID }, {}) => {
+      RemoveTeamPlayer: async (_, { teamID, PlayerID }, { liveQueryStore }) => {
         try {
           const newTeam = await team.findByIdAndUpdate(
             { _id: teamID },
@@ -209,12 +215,13 @@ export const teamSchema = {
               },
             }
           );
+          liveQueryStore.invalidate(["Query.getTeam"]);
           return true;
         } catch (error) {
           throw new GraphQLError(error);
         }
       },
-      addTeamPlayer: async (_, { teamID, PlayerIDs }, {}) => {
+      addTeamPlayer: async (_, { teamID, PlayerIDs }, { liveQueryStore }) => {
         try {
           const newTeam = await team.findByIdAndUpdate(
             { _id: teamID },
@@ -224,6 +231,7 @@ export const teamSchema = {
               },
             }
           );
+          liveQueryStore.invalidate(["Query.getTeam"]);
           return true;
         } catch (error) {
           throw new GraphQLError(error);

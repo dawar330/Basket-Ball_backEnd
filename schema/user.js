@@ -58,6 +58,21 @@ export const userSchema = {
       type Mutation {
         updateUser(UserInput: UserInput!): User
         register(registerUserInput: registerUserInput!): auth
+        registerNewPlayer(
+          avatar: String!
+          Team: String!
+          PlayerName: String!
+          PlayingLevel: String!
+          Height: Int!
+          Weight: Int!
+          WingSpan: Int!
+          Vertical: Int!
+          CGPA: Int!
+          AAU: Boolean!
+          AAUTeamName: String
+          AAUAgeLevel: String
+          AAUState: String
+        ): Boolean
         login(loginInput: loginInput!): auth
         updateUserInfo(lname: String, fname: String, avatar: String): User
         UpdateEmail(email: String, PassWord: String): Boolean
@@ -141,6 +156,57 @@ export const userSchema = {
             last_name: registerUserInput.lastname,
             Role: registerUserInput.Role,
           };
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      registerNewPlayer: async (
+        _,
+        {
+          avatar,
+          Team,
+          PlayerName,
+          PlayingLevel,
+          Height,
+          Weight,
+          WingSpan,
+          Vertical,
+          CGPA,
+          AAU,
+          AAUTeamName,
+          AAUAgeLevel,
+          AAUState,
+        }
+      ) => {
+        try {
+          const newUser = new user({
+            fname: PlayerName,
+            lname: "",
+            email: "",
+            password: "",
+            avatar,
+            PlayingLevel,
+            Height,
+            Weight,
+            WingSpan,
+            Vertical,
+            CGPA,
+            AAU,
+            AAUTeamName,
+            AAUAgeLevel,
+            AAUState,
+          });
+          newUser.save();
+          const newTeamMember = await team.findByIdAndUpdate(
+            { _id: Team },
+            {
+              $push: {
+                Players: newUser._id,
+              },
+            }
+          );
+
+          return true;
         } catch (error) {
           throw new GraphQLError(error);
         }

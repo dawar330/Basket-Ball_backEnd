@@ -15,6 +15,16 @@ const userSchema = new Schema({
     type: Number,
     default: 6,
   },
+  PlayingLevel: String,
+  Height: Number,
+  Weight: Number,
+  WingSpan: Number,
+  Vertical: Number,
+  CGPA: Number,
+  AAU: Boolean,
+  AAUTeamName: String,
+  AAUAgeLevel: String,
+  AAUState: String,
 });
 
 export default model("User", userSchema);

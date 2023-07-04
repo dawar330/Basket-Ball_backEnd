@@ -279,7 +279,7 @@ export const playSchema = {
               teamStats.homeTeam.push({ ...createPlayerStats(Player) });
             }
           });
-          myGame.awayTeam.Players.map((Player) => {
+          myGame?.awayTeam?.Players.map((Player) => {
             if (
               !teamStats.awayTeam.some(
                 (stats) => stats._id.toString() === Player._id.toString()
@@ -461,7 +461,7 @@ export const playSchema = {
                 });
               }
             });
-            myGame.awayTeam.Players.map((Player) => {
+            myGame?.awayTeam?.Players.map((Player) => {
               if (
                 !teamStats.awayTeam["Quarter" + (i + 1)].some(
                   (stats) => stats._id.toString() === Player._id.toString()

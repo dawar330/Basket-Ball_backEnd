@@ -4,6 +4,7 @@ const teamSchema = new Schema({
   teamName: String,
   Image: String,
   teamCity: String,
+  Color: String,
   Coach: { type: Schema.Types.ObjectId, ref: "User" },
   Players: { type: [Schema.Types.ObjectId], ref: "User" },
 });
