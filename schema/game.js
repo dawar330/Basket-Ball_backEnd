@@ -80,6 +80,11 @@ export const gameSchema = {
           PassWord: String!
           newLimit: String!
         ): Boolean
+        UpdateGameTotalTime(
+          gameID: String!
+          PassWord: String!
+          newLimit: Int!
+        ): Boolean
       }
     `,
   ],
@@ -472,6 +477,28 @@ export const gameSchema = {
             const myGame = await game.findByIdAndUpdate(
               { _id: gameID },
               { TimeDistribution: newLimit }
+            );
+            liveQueryStore.invalidate(["Query.getGame"]);
+            return true;
+          } else {
+            return false;
+          }
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      UpdateGameTotalTime: async (
+        _,
+        { gameID, PassWord, newLimit },
+        { userID, liveQueryStore }
+      ) => {
+        try {
+          const users = await user.findById({ _id: userID });
+
+          if (users.password === PassWord) {
+            const myGame = await game.findByIdAndUpdate(
+              { _id: gameID },
+              { TotalTime: newLimit }
             );
             liveQueryStore.invalidate(["Query.getGame"]);
             return true;
