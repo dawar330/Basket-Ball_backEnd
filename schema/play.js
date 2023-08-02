@@ -20,6 +20,7 @@ function createPlayerStats(player) {
     DEF: 0,
     TOT: 0,
     PF: 0,
+    TF: 0,
     A: 0,
     TO: 0,
     BLOCK: 0,
@@ -66,6 +67,7 @@ export const playSchema = {
         DEF: Int
         TOT: Int
         PF: Int
+        TF: Int
         A: Int
         TO: Int
         BLOCK: Int
@@ -262,9 +264,8 @@ export const playSchema = {
             existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
             existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
             existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
-            existingPlayerStats.PF += ["F", "TF"].includes(play.PlayType)
-              ? 1
-              : 0;
+            existingPlayerStats.PF += play.PlayType === "F" ? 1 : 0;
+            existingPlayerStats.TF += play.PlayType === "TF" ? 1 : 0;
             existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
             existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
             existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
@@ -353,7 +354,7 @@ export const playSchema = {
             existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
             existingPlayerStats.STEAL += play.PlayType === "STEAL" ? 1 : 0;
           });
-          console.log(existingPlayerStats);
+
           return existingPlayerStats;
         } catch (error) {
           throw new GraphQLError(error);
@@ -440,9 +441,7 @@ export const playSchema = {
             existingPlayerStats.OFF += play.PlayType === "OFF" ? 1 : 0;
             existingPlayerStats.DEF += play.PlayType === "DEF" ? 1 : 0;
             existingPlayerStats.TOT += play.PlayType === "TOT" ? 1 : 0;
-            existingPlayerStats.PF += ["F", "TF"].includes(play.PlayType)
-              ? 1
-              : 0;
+            existingPlayerStats.PF += play.PlayType === "F" ? 1 : 0;
             existingPlayerStats.A += play.PlayType === "A" ? 1 : 0;
             existingPlayerStats.TO += play.PlayType === "TO" ? 1 : 0;
             existingPlayerStats.BLOCK += play.PlayType === "BLOCK" ? 1 : 0;
@@ -515,7 +514,6 @@ export const playSchema = {
             "Query.getQuarterlyGamePlaysByPlayer",
             "Query.getGamePlay",
             "Query.getScoringGamePlay",
-            ,
           ]);
           return newPlay;
         } catch (error) {

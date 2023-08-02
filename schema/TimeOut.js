@@ -146,13 +146,7 @@ export const TimeOutSchema = {
             Time: new Date(),
           });
           newTimeOut.save();
-          //  liveQueryStore.invalidate([
-          //    "Query.getGamePlaysByPlayer",
-          //    "Query.getQuarterlyGamePlaysByPlayer",
-          //    "Query.getGamePlay",
-          //    "Query.getScoringGamePlay",
-          //    ,
-          //  ]);
+          liveQueryStore.invalidate(["Query.getGameTimeOuts"]);
           return newTimeOut;
         } catch (error) {
           throw new GraphQLError(error);
@@ -171,13 +165,7 @@ export const TimeOutSchema = {
             Time: Time,
           });
           newPossession.save();
-          //  liveQueryStore.invalidate([
-          //    "Query.getGamePlaysByPlayer",
-          //    "Query.getQuarterlyGamePlaysByPlayer",
-          //    "Query.getGamePlay",
-          //    "Query.getScoringGamePlay",
-          //    ,
-          //  ]);
+          liveQueryStore.invalidate(["Query.getGamePossession"]);
           return newPossession;
         } catch (error) {
           throw new GraphQLError(error);

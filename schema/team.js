@@ -173,7 +173,6 @@ export const teamSchema = {
         { Image, Color, teamName, teamCity },
         { userID, liveQueryStore }
       ) => {
-        console.log(Color);
         try {
           const newTeam = new team({
             teamName: teamName,

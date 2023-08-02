@@ -10,11 +10,20 @@ export const userSchema = {
   typeDefs: [
     /* GraphQL */ `
       type User {
+        avatar: String!
+        PlayingLevel: String
+        Height: Int!
+        Weight: Int!
+        WingSpan: Int!
+        Vertical: Int!
+        CGPA: Float!
+        AAU: Boolean!
+        AAUTeamName: String!
+        AAUAgeLevel: String!
+        AAUState: String!
         fname: String!
         lname: String!
         email: String!
-        password: String!
-        avatar: String!
         AvailableGames: Int!
       }
       type UserDetail {
@@ -74,7 +83,23 @@ export const userSchema = {
           AAUState: String
         ): Boolean
         login(loginInput: loginInput!): auth
-        updateUserInfo(lname: String, fname: String, avatar: String): User
+        updateUserInfo(
+          lname: String
+          fname: String
+          avatar: String
+          PlayingLevel: String!
+          Height: Int!
+          Weight: Int!
+          WingSpan: Int!
+          Vertical: Int!
+          CGPA: Float!
+        ): User
+        updateUserAAUInfo(
+          AAU: Boolean!
+          AAUTeamName: String
+          AAUAgeLevel: String
+          AAUState: String
+        ): User
         UpdateEmail(email: String, PassWord: String): Boolean
         UpdatePass(newPass: String, PassWord: String): Boolean
       }
@@ -85,6 +110,7 @@ export const userSchema = {
       getUserByToken: async (_, { token }) => {
         try {
           const myUser = await getUserByToken(token);
+
           return myUser;
         } catch (error) {
           throw new GraphQLError(error);
@@ -103,12 +129,40 @@ export const userSchema = {
       },
       getPlayers: async (_, {}) => {
         try {
-          const myUser = await user.find(
-            { role: "Player" },
-            { _id: 1, fname: 1, lname: 1, avatar: 1, email: 1 }
-          );
-
-          return myUser;
+          const playersNotInTeams = await user.aggregate([
+            // Match users with the role "Player"
+            {
+              $match: {
+                role: "Player",
+              },
+            },
+            // Lookup teams to get an array of all player ObjectIds from those teams
+            {
+              $lookup: {
+                from: "teams",
+                localField: "_id",
+                foreignField: "Players",
+                as: "teamsWithPlayer",
+              },
+            },
+            // Filter out users who have no matching teams (teamsWithPlayer array is empty)
+            {
+              $match: {
+                teamsWithPlayer: { $size: 0 },
+              },
+            },
+            // Optionally, you can project the fields you want to include in the result
+            // {
+            //   $project: {
+            //     fname: 1,
+            //     lname: 1,
+            //     email: 1,
+            //     role: 1,
+            //   },
+            // },
+          ]);
+          console.log(playersNotInTeams, "asdas");
+          return playersNotInTeams;
         } catch (error) {
           throw new GraphQLError(error);
         }
@@ -176,7 +230,8 @@ export const userSchema = {
           AAUTeamName,
           AAUAgeLevel,
           AAUState,
-        }
+        },
+        { liveQueryStore }
       ) => {
         try {
           const newUser = new user({
@@ -205,6 +260,7 @@ export const userSchema = {
               },
             }
           );
+          liveQueryStore.invalidate(["Query.getTeam"]);
 
           return true;
         } catch (error) {
@@ -228,11 +284,58 @@ export const userSchema = {
           throw new GraphQLError(error);
         }
       },
-      updateUserInfo: async (_, { lname, fname, avatar }, { userID }) => {
+      updateUserInfo: async (
+        _,
+        {
+          lname,
+          fname,
+          avatar,
+          PlayingLevel,
+          Height,
+          Weight,
+          WingSpan,
+          Vertical,
+          CGPA,
+        },
+        { userID }
+      ) => {
         try {
           const myUser = await user.findByIdAndUpdate(
             { _id: userID },
-            { fname: fname, lname: lname, avatar: avatar },
+            {
+              fname: fname,
+              lname: lname,
+              avatar: avatar,
+              PlayingLevel: PlayingLevel,
+              Height: Height,
+              Weight: Weight,
+              WingSpan: WingSpan,
+              Vertical: Vertical,
+              CGPA: CGPA,
+            },
+            {
+              new: true,
+            }
+          );
+          return myUser;
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
+      updateUserAAUInfo: async (
+        _,
+        { AAU, AAUTeamName, AAUAgeLevel, AAUState },
+        { userID }
+      ) => {
+        try {
+          const myUser = await user.findByIdAndUpdate(
+            { _id: userID },
+            {
+              AAU: AAU,
+              AAUTeamName: AAUTeamName ? AAUTeamName : "",
+              AAUAgeLevel: AAUAgeLevel ? AAUAgeLevel : "",
+              AAUState: AAUState ? AAUState : "",
+            },
             {
               new: true,
             }

@@ -56,6 +56,7 @@ export const gameSchema = {
       }
       type Query {
         getGames: [Game]
+        getAllGames: [Game]
         getGame(gameID: String!): Game
         getSeasonOverView: SeasonOverView
         getRecentGamesStats: [getRecentGamesStats]
@@ -103,13 +104,26 @@ export const gameSchema = {
           throw new GraphQLError(error);
         }
       },
+      getAllGames: async (_, {}, {}) => {
+        try {
+          const myGames = await game
+            .find()
+            .populate("homeTeam")
+            .populate("awayTeam");
+
+          return myGames;
+          // }
+        } catch (error) {
+          throw new GraphQLError(error);
+        }
+      },
       getGame: async (_, { gameID }, {}) => {
         try {
           const myGame = await game
             .findOne({ _id: gameID })
             .populate("homeTeam")
             .populate("awayTeam");
-          console.log(myGame);
+
           return myGame;
         } catch (error) {
           throw new GraphQLError(error);
@@ -141,6 +155,15 @@ export const gameSchema = {
                 path: "$Plays",
                 preserveNullAndEmptyArrays: false,
               },
+            },
+            {
+              $match:
+                /**
+                 * query: The query in MQL.
+                 */
+                {
+                  "Plays.Missed": false,
+                },
             },
             {
               $group: {
@@ -344,7 +367,9 @@ export const gameSchema = {
             if (Game.GamePlays[0]?._id === 0) {
               AwayScore = Game.GamePlays[0]?.Score;
             }
-            if (HomeScore > AwayScore) {
+            console.log(HomeScore, AwayScore);
+            if (HomeScore === AwayScore) {
+            } else if (HomeScore > AwayScore) {
               ++Win;
             } else {
               ++Loss;
@@ -353,7 +378,6 @@ export const gameSchema = {
 
           return { Win, Loss };
         } catch (error) {
-          console.log(error);
           throw new GraphQLError(error);
         }
       },
