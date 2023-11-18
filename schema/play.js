@@ -37,6 +37,7 @@ export const playSchema = {
         PlayType: String
         Missed: Boolean
         Time: String
+        Time2: String
         GameID: String
       }
       type GamePlayerPlays {
@@ -101,6 +102,7 @@ export const playSchema = {
           Missed: Boolean!
           GameID: String!
           Quarter: Int!
+          time: String!
         ): Play
       }
     `,
@@ -495,7 +497,7 @@ export const playSchema = {
     Mutation: {
       createPlay: async (
         _,
-        { PlayerID, TeamID, PlayType, Missed, GameID, Quarter },
+        { PlayerID, TeamID, PlayType, Missed, GameID, Quarter, time },
         { liveQueryStore }
       ) => {
         try {
@@ -506,7 +508,8 @@ export const playSchema = {
             Missed: Missed,
             Game: GameID,
             Quarter: Quarter,
-            Time: new Date(),
+            Time2: new Date(),
+            Time: time,
           });
           newPlay.save();
           liveQueryStore.invalidate([

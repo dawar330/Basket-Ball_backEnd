@@ -7,7 +7,8 @@ const PlaySchema = new Schema({
   Player: { type: Schema.Types.ObjectId, ref: "User" },
   Game: { type: Schema.Types.ObjectId, ref: "Game" },
   Quarter: Number,
-  Time: Date,
+  Time2: Date,
+  Time: String,
 });
 
 export default model("Play", PlaySchema);

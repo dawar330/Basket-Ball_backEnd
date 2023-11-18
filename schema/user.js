@@ -127,7 +127,7 @@ export const userSchema = {
           throw new GraphQLError(error);
         }
       },
-      getPlayers: async (_, {}) => {
+      getPlayers: async (_, { }) => {
         try {
           const playersNotInTeams = await user.aggregate([
             // Match users with the role "Player"
@@ -171,10 +171,12 @@ export const userSchema = {
     Mutation: {
       login: async (_, { loginInput }) => {
         try {
+          console.log(loginInput);
           const User = await user.findOne({
             email: loginInput.email,
             password: loginInput.password,
           });
+          console.log(User);
           var accessToken = getJwt(User.email, User.role);
 
           return {
